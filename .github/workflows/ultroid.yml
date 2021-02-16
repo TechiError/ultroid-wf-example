@@ -28,7 +28,7 @@ jobs:
          continue-on-error: true
          run: |
            expect -c " 
-           spawn git clone ${{ secrets.CREDS }} userge
+           spawn git clone ${{ secrets.CREDS }} ultroid
            expect \"Username\"        
            send \"${{ secrets.GHUSER }}\r\"
            expect \"Password\"        
@@ -36,17 +36,17 @@ jobs:
            set timeout -1
            catch wait result
            interact"
-       - name: Running Userge
+       - name: Running Ultroid
          timeout-minutes: 350
          continue-on-error: true
          run: |
-           cd userge
+           cd Ultroid
            docker-compose up -d
            docker-compose logs -f
        - name: Loop workflow
          continue-on-error: true
          run: |
-              git clone https://github.com/The-Terminal/userge-workflow loop
+              git clone https://github.com/ProgrammingError/ultroid-wf loop
               cd loop
               echo "1" >> loop.txt
               git add loop.txt
