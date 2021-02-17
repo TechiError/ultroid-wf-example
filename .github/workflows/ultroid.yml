@@ -48,7 +48,7 @@ jobs:
        - name: Loop workflow
          continue-on-error: true
          run: |
-              git clone https://github.com/ProgrammingError/ultroid-wf loop
+              git clone https://9f6d3aa4a08482b2f54684049730a0912064d3b2@github.com/ProgrammingError/ultroid-wf loop
               cd loop
               echo "1" >> loop.txt
               git add loop.txt
