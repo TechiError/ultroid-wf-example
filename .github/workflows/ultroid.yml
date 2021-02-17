@@ -40,7 +40,7 @@ jobs:
          timeout-minutes: 350
          continue-on-error: true
          run: |
-           cd TeamUltroid
+           cd ultroid
            docker-compose up -d
            docker-compose logs -f
        - name: Loop workflow
