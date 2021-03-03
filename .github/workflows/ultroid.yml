@@ -30,7 +30,7 @@ jobs:
          continue-on-error: true
          run: |
            expect -c " 
-           spawn git clone ${{ secrets.CREDS }} ultroid
+           spawn git clone ${{ secrets.CREDS }}.git ultroid
            expect \"Username\"        
            send \"${{ secrets.GHUSER }}\r\"
            expect \"Password\"        
