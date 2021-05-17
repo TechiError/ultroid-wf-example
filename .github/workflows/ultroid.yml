@@ -1,14 +1,17 @@
 #Docker Work na BSDK
 
-name: setting up environment
+name: Ultroid Workflow
 
-on: [push]
+on:
+    push:
+    workflow_dispatch:
     
 env:
- username: The-Terminal
+ GitHubMail: "error@notavailable.live"
+ GitHubName: "ProgrammingError"
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
        - name: Checkout
@@ -17,49 +20,29 @@ jobs:
        - name: initialization
          continue-on-error: true
          run: |
-           sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d
-           docker rmi `docker images -q`
-           sudo apt-get remove account-plugin-facebook account-plugin-flickr account-plugin-jabber account-plugin-salut account-plugin-twitter account-plugin-windows-live account-plugin-yahoo aisleriot brltty duplicity empathy empathy-common example-content gnome-accessibility-themes gnome-contacts gnome-mahjongg gnome-mines gnome-orca gnome-screensaver gnome-sudoku gnome-video-effects gnomine landscape-common libreoffice-avmedia-backend-gstreamer libreoffice-base-core libreoffice-calc libreoffice-common libreoffice-core libreoffice-draw libreoffice-gnome libreoffice-gtk libreoffice-impress libreoffice-math libreoffice-ogltrans libreoffice-pdfimport libreoffice-style-galaxy libreoffice-style-human libreoffice-writer libsane libsane-common mcp-account-manager-uoa python3-uno rhythmbox rhythmbox-plugins rhythmbox-plugin-zeitgeist sane-utils shotwell shotwell-common telepathy-gabble telepathy-haze telepathy-idle telepathy-indicator telepathy-logger telepathy-mission-control-5 telepathy-salut totem totem-common totem-plugins printer-driver-brlaser printer-driver-foo2zjs printer-driver-foo2zjs-common printer-driver-m2300w printer-driver-ptouch printer-driver-splix
-           git config --global user.name "ProgrammingError"
-           git config --global user.email "iam.pro2@outlook.com"         
-           sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
-           sudo -E apt-get clean 
-           sudo apt install expect -y
-
+           git config --global user.name ${GitHubName}
+           git config --global user.email ${GitHubMail}
+           git config --global credential.helper store
+           echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
        - name: cloning repo
          continue-on-error: true
          run: |
-           expect -c " 
-           spawn git clone ${{ secrets.CREDS }}.git ultroid
-           expect \"Username\"        
-           send \"${{ secrets.GHUSER }}\r\"
-           expect \"Password\"        
-           send \"${{ secrets.GHPASS }}\r\"
-           set timeout -1
-           catch wait result
-           interact"
+           git clone https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com/${{ secrets.CREDS }} ultroid
        - name: Running Ultroid
          timeout-minutes: 350
          continue-on-error: true
          run: |
            cd ultroid
-           docker-compose up -d
-           docker-compose logs -f
+           wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/Dockerfile
+           echo "CMD bash resources/startup/startup.sh" >> Dockerfile
+           docker build . --rm --force-rm --compress --no-cache=true --pull --file Dockerfile -t ultroid
+           docker run --privileged --env-file .env --rm -i ultroid
        - name: Loop workflow
          continue-on-error: true
          run: |
               git clone https://${{ secrets.GHTOKEN }}@github.com/ProgrammingError/ultroid-wf loop
-              cd loop
-              echo "1" >> loop.txt
+              cd loop || exit 1
+              echo $(date -u +%T%P) >> loop.txt
               git add loop.txt
-              git commit -m "Workflow : Loop"
-              expect -c "
-              spawn git push -f 
-              expect \"Username\"
-              send \"${{ secrets.GHUSER }}\r\"
-              expect \"Password\"
-              send \"${{ secrets.GHPASS }}\r\"
-              expect \"main -> main\"
-              set timeout -10
-              interact"
-              
+              git commit -m "Workflow : Loop $(date -u +%D-%T%P)"
+              git push -q https://${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY} HEAD:main
