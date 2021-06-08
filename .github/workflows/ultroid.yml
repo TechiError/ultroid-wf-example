@@ -6,9 +6,6 @@ on:
     push:
     workflow_dispatch:
     
-env:
- GitHubMail: "error@notavailable.live"
- GitHubName: "ProgrammingError"
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -20,10 +17,10 @@ jobs:
        - name: initialization
          continue-on-error: true
          run: |
-           git config --global user.name ${GitHubName}
-           git config --global user.email ${GitHubMail}
+           git config --global user.name ${{ secrets.GitHubName }}
+           git config --global user.email ${{ secrets.GitHubMail }}
            git config --global credential.helper store
-           echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+           echo "https://${{ secrets.GitHubName }}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
        - name: cloning repo
          continue-on-error: true
          run: |
@@ -33,14 +30,14 @@ jobs:
          continue-on-error: true
          run: |
            cd ultroid
-           wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/Dockerfile
+           wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/main/Dockerfile
            echo "CMD bash resources/startup/startup.sh" >> Dockerfile
            docker build . --rm --force-rm --compress --no-cache=true --pull --file Dockerfile -t ultroid
            docker run --privileged --env-file .env --rm -i ultroid
        - name: Loop workflow
          continue-on-error: true
          run: |
-              git clone https://${{ secrets.GHTOKEN }}@github.com/ProgrammingError/ultroid-wf loop
+              git clone https://github.com/ProgrammingError/ultroid-wf-example loop
               cd loop || exit 1
               echo $(date -u +%T%P) >> loop.txt
               git add loop.txt
