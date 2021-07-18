@@ -29,11 +29,7 @@ jobs:
          timeout-minutes: 350
          continue-on-error: true
          run: |
-           cd ultroid
-           wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/main/Dockerfile
-           echo "CMD bash resources/startup/startup.sh" >> Dockerfile
-           docker build . --rm --force-rm --compress --no-cache=true --pull --file Dockerfile -t ultroid
-           docker run --privileged --env-file .env --rm -i ultroid
+           sudo sh action.sh
        - name: Loop workflow
          continue-on-error: true
          run: |
