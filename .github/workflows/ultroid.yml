@@ -5,78 +5,109 @@ on:
     workflow_dispatch:
     
 env:
- GitHubMail: "error@notavailable.live"
- GitHubName: "techierror"
+ GitHubName: ${{ github.event.repository.owner.login }}
+ GitHubMail: ${{ github.event.repository.owner.login }}@users.noreply.github.com
  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
-       - name: Checkout
-         uses: actions/checkout@main
+      - name: Checkout
+        uses: actions/checkout@main
 
-       - uses: styfle/cancel-workflow-action@0.9.1
-         name: "Cancel duplicate workflow runs"
-         with:
+      - uses: styfle/cancel-workflow-action@0.9.1
+        name: "Cancel duplicate workflow runs"
+        with:
             all_but_latest: true
             access_token: ${{ github.token }}
 
-       - name: initialization
-         continue-on-error: true
-         run: |
-            git config --global user.name ${GitHubName}
-            git config --global user.email ${GitHubMail}
-            git config --global credential.helper store
-            echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
-            sudo hostnamectl set-hostname errored-af
-            sudo apt-get update && sudo apt upgrade -y
-            sudo apt-get install -y \
-            bash \
-            cmake \
-            curl \
-            ffmpeg \
-            gcc \
-            git \
-            jq \
-            make \
-            mediainfo \
-            megatools \
-            neofetch \
-            wkhtmltopdf \
-            zip \
-            software-properties-common
-            sudo add-apt-repository ppa:deadsnakes/ppa
-            sudo apt install python3.9 python3.9-distutils python3.9-dev -y
-            sudo update-alternatives --install /usr/local/bin/python python /usr/bin/python3.9 1
-            sudo update-alternatives --install /usr/local/bin/python3 python3 /usr/bin/python3.9 1
-            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-            sudo python3.9 get-pip.py
-            sudo apt-get autoremove --purge
-       - name: Run Ultroid
-         continue-on-error: true
-         timeout-minutes: 320
-         run: |
-          if [[ ${{ secrets.CREDS }} == *"gist.github"* ]]; then
-            if [[ ! -d ultroid ]]; then
-              mkdir ultroid
-            fi
-            curl -L ${{ secrets.CREDS }} > ultroid/.env
-          elif [[ ${{ secrets.CREDS }} == *"raw.githubusercontent"* ]]; then
-            if [[ ! -d ultroid ]]; then
-              mkdir ultroid
-            fi
-            curl -L ${{ secrets.CREDS }} > ultroid/.env
-          elif [[ ${{ secrets.CREDS }} == *"github"* ]]; then
-           git clone ${{ secrets.CREDS }} ultroid
+      - name: PPA for Python
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa
+          sudo apt-get update
+
+      # cache apt packages
+      - name: Cache apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: bash cmake curl ffmpeg gcc git jq make mediainfo megatools neofetch wkhtmltopdf zip software-properties-common python3.10 python3.10-dev
+          version: 1.0
+
+      - name: Clone Ultroid
+        run: |
+          sudo bash -c "git clone -b dev https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid || git clone -b main https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid"
+
+      - name: Copy Python requirements
+        run: |
+          sudo bash -c "cp -r /root/TeamUltroid/requirements.txt ${{ github.action_path }}/requirements.txt"
+          # copy optional requirements to requirements.txt
+          sudo bash -c "cat /root/TeamUltroid/res*/sta*/opt*.txt >> ${{ github.action_path }}/requirements.txt"
+
+      # cache pip packages from system site-packages
+      - name: Cache pip packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install Python requirements
+        run: |
+          sudo bash -c "pip install -U -r /root/TeamUltroid/requirements.txt"
+          sudo bash -c "pip install -U -r /root/TeamUltroid/res*/sta*/opt*.txt"
+
+      - name: Initialize
+        continue-on-error: true
+        run: |
+          git config --global user.name ${GitHubName}
+          git config --global user.email ${GitHubMail}
+          git config --global credential.helpe  r store
+          echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+          sudo hostnamectl set-hostname errored-af
+          sudo apt-get autoremove --purge
+
+      - name: Run Ultroid
+        continue-on-error: false
+        timeout-minutes: 320
+        run: |
+          if [ -z "${{ secrets.CREDS }}" ]; then
+            echo "CREDS is empty"
+            exit 1
           fi
-          sudo sh action.sh
-       - name: Loop workflow
-         continue-on-error: true
-         run: |
-              git clone https://${{ secrets.GHTOKEN }}@github.com/${GITHUB_REPOSITORY} loop
-              cd loop || exit 1
-              echo $(date -u +%T%P) >> loop.txt
-              git add loop.txt
-              git commit -m "Workflow : Loop $(date -u +%D-%T%P)"
-              git push -q https://${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY} HEAD:main
+          
+          case ${{ secrets.CREDS }} in 
+            (*gist.github*)
+              if [ ! -d ultroid ]; then
+                mkdir ultroid
+              fi        
+              curl -L ${{ secrets.CREDS }} > ultroid/.env
+            ;;
+            (*raw.githubusercontent*)
+              if [ ! -d ultroid ]; then
+                mkdir ultroid
+              fi
+              curl -L ${{ secrets.CREDS }} > ultroid/.env
+            ;;
+            (*//github.com/*)
+              git clone ${{ secrets.CREDS }} ultroid
+          esac
+
+          if [ ! -f ultroid/.env ]; then
+            echo "No .env file found"
+            exit 1
+          fi
+
+          # stop action if 325 minutes have passed
+          timeout 19500s bash -c 'sudo sh action.sh'
+
+      - name: Loop workflow
+        continue-on-error: false
+        run: |
+          git clone https://${{ secrets.GHTOKEN }}@github.com/${GITHUB_REPOSITORY} loop
+          cd loop || exit 1
+          echo $(date -u +%T%P) >> loop.txt
+          git add loop.txt
+          git commit -m "Workflow : Loop $(date -u +%D-%T%P)"
+          git push -q https://${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY} HEAD:main
