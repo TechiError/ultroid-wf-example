@@ -1,11 +1,13 @@
-#Docker Work na BSDK
-
 name: Ultroid Workflow
 
 on:
     push:
     workflow_dispatch:
     
+env:
+ GitHubMail: "error@notavailable.live"
+ GitHubName: "techierror"
+ GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -13,32 +15,66 @@ jobs:
     steps:
        - name: Checkout
          uses: actions/checkout@main
-       
-       - uses: styfle/cancel-workflow-action@0.9.0
+
+       - uses: styfle/cancel-workflow-action@0.9.1
          name: "Cancel duplicate workflow runs"
          with:
             all_but_latest: true
             access_token: ${{ github.token }}
+
        - name: initialization
          continue-on-error: true
          run: |
-           git config --global user.name ${{ secrets.GitHubName }}
-           git config --global user.email ${{ secrets.GitHubMail }}
-           git config --global credential.helper store
-           echo "https://${{ secrets.GitHubName }}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
-       - name: cloning repo
+            git config --global user.name ${GitHubName}
+            git config --global user.email ${GitHubMail}
+            git config --global credential.helper store
+            echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+            sudo hostnamectl set-hostname errored-af
+            sudo apt-get update && sudo apt upgrade -y
+            sudo apt-get install -y \
+            bash \
+            cmake \
+            curl \
+            ffmpeg \
+            gcc \
+            git \
+            jq \
+            make \
+            mediainfo \
+            megatools \
+            neofetch \
+            wkhtmltopdf \
+            zip \
+            software-properties-common
+            sudo add-apt-repository ppa:deadsnakes/ppa
+            sudo apt install python3.9 python3.9-distutils python3.9-dev -y
+            sudo update-alternatives --install /usr/local/bin/python python /usr/bin/python3.9 1
+            sudo update-alternatives --install /usr/local/bin/python3 python3 /usr/bin/python3.9 1
+            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+            sudo python3.9 get-pip.py
+            sudo apt-get autoremove --purge
+       - name: Run Ultroid
          continue-on-error: true
+         timeout-minutes: 320
          run: |
-           git clone https://${{ secrets.GitHubName }}:${{ secrets.GH_TOKEN }}@${{ secrets.CREDS }} ultroid
-       - name: Running Ultroid
-         timeout-minutes: 350
-         continue-on-error: true
-         run: |
-           sudo sh action.sh
+          if [[ ${{ secrets.CREDS }} == *"gist.github"* ]]; then
+            if [[ ! -d ultroid ]]; then
+              mkdir ultroid
+            fi
+            curl -L ${{ secrets.CREDS }} > ultroid/.env
+          elif [[ ${{ secrets.CREDS }} == *"raw.githubusercontent"* ]]; then
+            if [[ ! -d ultroid ]]; then
+              mkdir ultroid
+            fi
+            curl -L ${{ secrets.CREDS }} > ultroid/.env
+          elif [[ ${{ secrets.CREDS }} == *"github"* ]]; then
+           git clone ${{ secrets.CREDS }} ultroid
+          fi
+          sudo sh action.sh
        - name: Loop workflow
          continue-on-error: true
          run: |
-              git clone https://github.com/${GITHUB_REPOSITORY} loop
+              git clone https://${{ secrets.GHTOKEN }}@github.com/${GITHUB_REPOSITORY} loop
               cd loop || exit 1
               echo $(date -u +%T%P) >> loop.txt
               git add loop.txt
