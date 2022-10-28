@@ -26,7 +26,6 @@ jobs:
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa
           sudo apt-get update
-
       # cache apt packages
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -37,13 +36,11 @@ jobs:
       - name: Clone Ultroid
         run: |
           sudo bash -c "git clone -b dev https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid || git clone -b main https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid"
-
       - name: Copy Python requirements
         run: |
           sudo bash -c "cp -r /root/TeamUltroid/requirements.txt ${{ github.action_path }}/requirements.txt"
           # copy optional requirements to requirements.txt
           sudo bash -c "cat /root/TeamUltroid/res*/sta*/opt*.txt >> ${{ github.action_path }}/requirements.txt"
-
       # cache pip packages from system site-packages
       - name: Cache pip packages
         uses: actions/cache@v2
@@ -57,7 +54,6 @@ jobs:
         run: |
           sudo bash -c "pip install -U -r /root/TeamUltroid/requirements.txt"
           sudo bash -c "pip install -U -r /root/TeamUltroid/res*/sta*/opt*.txt"
-
       - name: Initialize
         continue-on-error: true
         run: |
@@ -67,10 +63,8 @@ jobs:
           echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
           sudo hostnamectl set-hostname errored-af
           sudo apt-get autoremove --purge
-
       - name: Run Ultroid
         continue-on-error: false
-        timeout-minutes: 320
         run: |
           if [ -z "${{ secrets.CREDS }}" ]; then
             echo "CREDS is empty"
@@ -93,15 +87,11 @@ jobs:
             (*//github.com/*)
               git clone ${{ secrets.CREDS }} ultroid
           esac
-
           if [ ! -f ultroid/.env ]; then
             echo "No .env file found"
             exit 1
           fi
-
-          # stop action if 325 minutes have passed
-          timeout 19500s bash -c 'sudo sh action.sh'
-
+          sudo bash action.sh
       - name: Loop workflow
         continue-on-error: false
         run: |
