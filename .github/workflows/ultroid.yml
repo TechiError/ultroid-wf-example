@@ -22,8 +22,14 @@ jobs:
             all_but_latest: true
             access_token: ${{ github.token }}
 
-      - name: PPA for Python
+      - name: Initialize
+        continue-on-error: true
         run: |
+          git config --global user.name ${GitHubName} && git config --global user.email ${GitHubMail}
+          git config --global credential.helper store
+          echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+          sudo hostnamectl set-hostname errored-af
+          # Add PPA for python3.9 or python3.9+
           sudo add-apt-repository ppa:deadsnakes/ppa
           sudo apt-get update
 
@@ -33,19 +39,7 @@ jobs:
           packages: bash cmake curl ffmpeg gcc git jq make mediainfo megatools neofetch wkhtmltopdf zip software-properties-common python3.10 python3.10-dev
           version: 1.0
 
-      - name: Initialize
-        continue-on-error: true
-        run: |
-          git config --global user.name ${GitHubName} && git config --global user.email ${GitHubMail}
-          git config --global credential.helper store
-          echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
-          sudo hostnamectl set-hostname errored-af
-
-      - name: Install Ultroid
-        continue-on-error: false
-        run: wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/installer.sh && chmod +x installer.sh && sudo bash installer.sh --dir="/root/TeamUltroid" --branch=dev
-
-      - name: Run Ultroid
+      - name: Load Config file
         continue-on-error: false
         run: |
           if [ -z "${{ secrets.CREDS }}" ]; then
@@ -73,7 +67,14 @@ jobs:
             echo "No .env file found"
             exit 1
           fi
-          sudo bash action.sh
+
+      - name: Install Ultroid
+        continue-on-error: false
+        run: wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/installer.sh && chmod +x installer.sh && sudo bash installer.sh --dir="/root/TeamUltroid" --branch=dev --env-file="ultroid/.env"
+
+      - name: Run Ultroid
+        continue-on-error: false
+        run: sudo bash action.sh
 
       - name: Loop workflow
         continue-on-error: false
