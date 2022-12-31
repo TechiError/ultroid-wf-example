@@ -26,43 +26,25 @@ jobs:
         run: |
           sudo add-apt-repository ppa:deadsnakes/ppa
           sudo apt-get update
-      # cache apt packages
+
       - name: Cache apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: bash cmake curl ffmpeg gcc git jq make mediainfo megatools neofetch wkhtmltopdf zip software-properties-common python3.10 python3.10-dev
           version: 1.0
 
-      - name: Clone Ultroid
-        run: |
-          sudo bash -c "git clone -b dev https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid || git clone -b main https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid"
-      - name: Copy Python requirements
-        run: |
-          sudo bash -c "cp -r /root/TeamUltroid/requirements.txt ${{ github.action_path }}/requirements.txt"
-          # copy optional requirements to requirements.txt
-          sudo bash -c "cat /root/TeamUltroid/res*/sta*/opt*.txt >> ${{ github.action_path }}/requirements.txt"
-      # cache pip packages from system site-packages
-      - name: Cache pip packages
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      
-      - name: Install Python requirements
-        run: |
-          sudo bash -c "pip install -U -r /root/TeamUltroid/requirements.txt"
-          sudo bash -c "pip install -U -r /root/TeamUltroid/res*/sta*/opt*.txt"
       - name: Initialize
         continue-on-error: true
         run: |
-          git config --global user.name ${GitHubName}
-          git config --global user.email ${GitHubMail}
-          git config --global credential.helpe  r store
+          git config --global user.name ${GitHubName} && git config --global user.email ${GitHubMail}
+          git config --global credential.helper store
           echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
           sudo hostnamectl set-hostname errored-af
-          sudo apt-get autoremove --purge
+
+      - name: Install Ultroid
+        continue-on-error: false
+        run: wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/installer.sh && chmod +x installer.sh && sudo bash installer.sh --dir "/root/TeamUltroid" --branch dev
+
       - name: Run Ultroid
         continue-on-error: false
         run: |
@@ -92,6 +74,7 @@ jobs:
             exit 1
           fi
           sudo bash action.sh
+
       - name: Loop workflow
         continue-on-error: false
         run: |
