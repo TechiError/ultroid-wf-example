@@ -43,7 +43,7 @@ jobs:
 
       - name: Install Ultroid
         continue-on-error: false
-        run: wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/installer.sh && chmod +x installer.sh && sudo bash installer.sh --dir "/root/TeamUltroid" --branch dev
+        run: wget https://raw.githubusercontent.com/TeamUltroid/Ultroid/dev/installer.sh && chmod +x installer.sh && sudo bash installer.sh --dir="/root/TeamUltroid" --branch=dev
 
       - name: Run Ultroid
         continue-on-error: false
