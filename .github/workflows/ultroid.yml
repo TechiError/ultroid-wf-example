@@ -26,8 +26,9 @@ jobs:
         continue-on-error: true
         run: |
           git config --global user.name ${GitHubName} && git config --global user.email ${GitHubMail}
-          git config --global credential.helper store
-          echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+          git config --global credential.helper 'store --file $XDG_CONFIG_HOME/git/credentials'
+          [ -d "$XDG_CONFIG_HOME/git" ] && echo "" || mkdir $XDG_CONFIG_HOME/git
+          echo "https://${GitHubName}:${{ secrets.GH_TOKEN }}@github.com" > $XDG_CONFIG_HOME/git/credentials
           sudo hostnamectl set-hostname errored-af
           # Add PPA for python3.9 or python3.9+
           sudo add-apt-repository ppa:deadsnakes/ppa
